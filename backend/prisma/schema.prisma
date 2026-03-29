@@ -1,0 +1,299 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model - authentication & authorization
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  passwordHash  String
+  role          String    @default("EMPLOYEE")
+  stationId     String?
+  station       Station?  @relation("stationEmployees", fields: [stationId], references: [id], onDelete: SetNull)
+  refreshToken  String?
+  isActive      Boolean   @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  sales         Sale[]
+  shifts        EmployeeShift[]
+  inventoryCounts InventoryCount[]
+  refunds       Refund[]
+  approvedShifts EmployeeShift[] @relation("ManagerApprovals")
+  approvedRefunds Refund[] @relation("ManagerApprovals")
+  managedStations Station[] @relation("stationManagers")
+
+  @@index([email])
+  @@index([stationId])
+}
+
+// UserRole values: ADMIN, MANAGER, EMPLOYEE
+
+// Station model - multiple locations
+model Station {
+  id        String   @id @default(cuid())
+  name      String
+  address   String
+  phone     String?
+  managerId String?
+  manager   User?    @relation("stationManagers", fields: [managerId], references: [id], onDelete: SetNull)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users           User[] @relation("stationEmployees")
+  sales           Sale[]
+  inventoryItems  InventoryItem[]
+  inventoryCounts InventoryCount[]
+  shifts          EmployeeShift[]
+  refunds         Refund[]
+  purchaseOrders  PurchaseOrder[]
+
+  @@index([name])
+}
+
+// Sale model - POS transactions
+model Sale {
+  id              String    @id @default(cuid())
+  stationId       String
+  station         Station   @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        User      @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  saleDate        DateTime
+  totalAmount     Float
+  paymentMethod   String    // CASH, CARD, BOTH
+  isFinalized     Boolean   @default(false)
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  items           SaleItem[]
+  refunds         Refund[]
+
+  @@index([stationId])
+  @@index([saleDate])
+}
+
+// PaymentMethod values: CASH, CARD, BOTH
+
+// Sale items - line items for each sale
+model SaleItem {
+  id              String    @id @default(cuid())
+  saleId          String
+  sale            Sale      @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  itemId          String
+  item            InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  quantity        Float
+  unitPrice       Float
+  subtotal        Float
+  fuelGrade       String?
+  createdAt       DateTime  @default(now())
+
+  @@index([saleId])
+}
+
+// Inventory items - products sold
+model InventoryItem {
+  id              String    @id @default(cuid())
+  stationId       String
+  station         Station   @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  name            String
+  type            String    // FUEL, CONVENIENCE
+  sku             String?
+  quantity        Float     @default(0)
+  unitPrice       Float     @default(0)
+  reorderLevel    Float?    @default(10)
+  lastCountDate   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  saleItems       SaleItem[]
+  inventoryCounts InventoryCount[]
+  poItems         PurchaseOrderItem[]
+
+  @@unique([stationId, sku])
+  @@index([stationId])
+}
+
+// ItemType values: FUEL, CONVENIENCE
+
+// Inventory counts - tracking changes
+model InventoryCount {
+  id              String    @id @default(cuid())
+  stationId       String
+  station         Station   @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        User      @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  countDate       DateTime
+  countType       String    // OPENING, CLOSING, ADJUSTMENT
+  itemId          String
+  item            InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  countedQuantity Float
+  notes           String?
+  createdAt       DateTime  @default(now())
+
+  @@index([stationId])
+  @@index([itemId])
+}
+
+// CountType values: OPENING, CLOSING, ADJUSTMENT
+
+// Employee shifts - daily work logs
+model EmployeeShift {
+  id                String    @id @default(cuid())
+  stationId         String
+  station           Station   @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  employeeId        String
+  employee          User      @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  shiftDate         DateTime
+  clockInTime       DateTime
+  clockOutTime      DateTime?
+  status            String    @default("SUBMITTED") // DRAFT, SUBMITTED, APPROVED, REJECTED
+  notes             String?
+  managerApprovalId String?
+  managerApproval   User?     @relation("ManagerApprovals", fields: [managerApprovalId], references: [id], onDelete: SetNull)
+  approvalNotes     String?
+  approvedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([stationId])
+  @@index([employeeId])
+  @@index([shiftDate])
+}
+
+// ShiftStatus values: DRAFT, SUBMITTED, APPROVED, REJECTED
+
+// Refunds - returns & refunds
+model Refund {
+  id                String    @id @default(cuid())
+  stationId         String
+  station           Station   @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  saleId            String?
+  sale              Sale?     @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  employeeId        String
+  employee          User      @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  refundDate        DateTime
+  fuelGrade         String?
+  amount            Float
+  reason            String
+  status            String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  managerApprovalId String?
+  managerApproval   User?     @relation("ManagerApprovals", fields: [managerApprovalId], references: [id], onDelete: SetNull)
+  approvalNotes     String?
+  approvedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([stationId])
+  @@index([saleId])
+  @@index([status])
+}
+
+// RefundStatus values: PENDING, APPROVED, REJECTED
+
+// Suppliers - vendor management
+model Supplier {
+  id              String    @id @default(cuid())
+  name            String
+  contactPerson   String?
+  email           String?
+  phone           String?
+  address         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  purchaseOrders  PurchaseOrder[]
+
+  @@index([name])
+}
+
+// Purchase orders - supplier orders
+model PurchaseOrder {
+  id                  String    @id @default(cuid())
+  stationId           String
+  station             Station   @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  supplierId          String
+  supplier            Supplier  @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  poDate              DateTime
+  expectedDelivery    DateTime?
+  status              String    @default("PENDING") // PENDING, RECEIVED, INVOICED, CANCELLED
+  totalAmount         Float
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Relations
+  items               PurchaseOrderItem[]
+
+  @@index([stationId])
+  @@index([supplierId])
+  @@index([status])
+}
+
+// POStatus values: PENDING, RECEIVED, INVOICED, CANCELLED
+
+// Purchase order items - line items
+model PurchaseOrderItem {
+  id        String    @id @default(cuid())
+  poId      String
+  po        PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  itemId    String
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  quantity  Float
+  unitPrice Float
+  subtotal  Float
+
+  @@index([poId])
+}
+
+// Audit log - track all user actions
+model AuditLog {
+  id            String    @id @default(cuid())
+  userId        String
+  action        String
+  resourceType  String
+  resourceId    String?
+  changes       String?
+  ipAddress     String?
+  status        String    @default("success")
+  errorMessage  String?
+  createdAt     DateTime  @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// Sync queue - for offline data synchronization
+model SyncQueue {
+  id              String    @id @default(cuid())
+  stationId       String
+  userId          String?
+  mutationType    String
+  payload         String
+  clientTimestamp DateTime
+  serverTimestamp DateTime  @default(now())
+  status          String    @default("PENDING") // PENDING, APPLIED, CONFLICT
+  conflictDetails String?
+  createdAt       DateTime  @default(now())
+
+  @@index([status])
+  @@index([stationId])
+}
+
+// SyncStatus values: PENDING, APPLIED, CONFLICT

@@ -1,0 +1,83 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+.pnp
+.pnp.js
+
+# Production builds
+dist/
+build/
+.next/
+out/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-workspace
+*.sublime-project
+
+# Testing
+coverage/
+.nyc_output/
+junit.xml
+*.lcov
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Cache
+.cache/
+.eslintcache
+.prettier-cache
+.turbo/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Docker
+.dockerignore
+
+# Backups (local)
+backups/
+*.sql.gz
+*.bak
+
+# SSL Certificates (keep in production)
+# certs/
+
+# Runtime
+.env.production.local
+temp/
+tmp/
+
+# Database
+*.db
+*.sqlite
+
+# Security - don't commit these
+certs/*.pem
+certs/*.key
+certs/*.crt
+!certs/.gitkeep
+
+# Misc
+.turborc
+dist-ssr
+*.egg-info
+dist.zip
