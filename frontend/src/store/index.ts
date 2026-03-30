@@ -5,6 +5,7 @@ import inventoryReducer from './slices/inventorySlice';
 import shiftsReducer from './slices/shiftsSlice';
 import dashboardReducer from './slices/dashboardSlice';
 import stationsReducer from './slices/stationsSlice';
+import financialReducer from './slices/financialSlice';
 
 const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ const store = configureStore({
     shifts: shiftsReducer,
     dashboard: dashboardReducer,
     stations: stationsReducer,
+    financial: financialReducer,
   },
 });
 

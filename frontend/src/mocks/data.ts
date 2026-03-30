@@ -423,3 +423,55 @@ export const mockDashboardMetrics = {
     { stationId: 'station-highway', stationName: 'Highway Station', totalSales: 134.00, transactionCount: 2 },
   ],
 };
+
+// Financial Summary Mock Data
+export const mockFinancialData = [
+  {
+    id: 'fin-1',
+    description: 'Downtown Station - Fuel 87',
+    stockDepart: 5000.00,
+    totalLivraison: 2500.00,
+    totalVersement: 1800.00,
+    stockJour: 5200.00,
+  },
+  {
+    id: 'fin-2',
+    description: 'Downtown Station - Fuel 91',
+    stockDepart: 3500.00,
+    totalLivraison: 1800.00,
+    totalVersement: 1200.00,
+    stockJour: 4000.00,
+  },
+  {
+    id: 'fin-3',
+    description: 'Downtown Station - Fuel Diesel',
+    stockDepart: 4200.00,
+    totalLivraison: 2000.00,
+    totalVersement: 1600.00,
+    stockJour: 4400.00,
+  },
+  {
+    id: 'fin-4',
+    description: 'Highway Station - Fuel 87',
+    stockDepart: 6000.00,
+    totalLivraison: 3000.00,
+    totalVersement: 2100.00,
+    stockJour: 6500.00,
+  },
+  {
+    id: 'fin-5',
+    description: 'Highway Station - Fuel 91',
+    stockDepart: 4000.00,
+    totalLivraison: 2200.00,
+    totalVersement: 1500.00,
+    stockJour: 4500.00,
+  },
+  {
+    id: 'fin-6',
+    description: 'Highway Station - Convenience Store',
+    stockDepart: 8500.00,
+    totalLivraison: 3500.00,
+    totalVersement: 2800.00,
+    stockJour: 8800.00,
+  },
+];
